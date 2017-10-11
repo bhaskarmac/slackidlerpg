@@ -3,7 +3,7 @@ const bodyParser = require('body-parser')
 
 const Idle = require('./idle');
 
-const PORT = process.env.PORT || 8080;
+const API_PORT = process.env.API_PORT || 8080;
 const idle = new Idle();
 
 var app = express();
@@ -36,8 +36,8 @@ app.post('/idle', (req, res) => {
 });
 
 // start server
-app.listen(PORT, function () {
-  console.log(`Listening on ${PORT}`);
+app.listen(API_PORT, function () {
+  console.log(`Listening on ${API_PORT}`);
 })
 
 // start loop
