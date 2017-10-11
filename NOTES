@@ -1,0 +1,65 @@
+const datastore = {
+  "last_timestamp": 1234567890, // the last time the loop started to fire
+
+  "teams": [ $team1, $team2, $team3 ], // e.g., [ T0B7KHWKG ]
+
+  "$team:token": $token, // token required to connect to team
+  "$team:channel": $channelid, // The channel dedicated to idleRPG - e.g., C7H596WJJ
+  "$team:players": [ $player1, $player2, $player3 ], // Players currently signed up as idleRPG players - e.g., [ U0B7PSQQY ]
+  "$team:$player": {
+    "userid": $userid, // e.g., U0B7PSQQY
+    "level": 7,
+    "time_to_level": 1000, // number of seconds until user levels up
+    "events": { // a list of recent events that happened to the user, FIFO queue limited to X items
+      $timestamp1: "Penalty applied: 100 seconds added",
+      $timestamp2: "User leveled up!",
+    },
+  },
+};
+
+
+
+
+
+
+
+
+
+message event
+
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0B7KHWKG",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "type": "message",
+    "user": "U0B7PSQQY",
+    "text": "I am a BANANA",
+    "ts": "1507665553.000020",
+    "channel": "C7H596WJJ",
+    "event_ts": "1507665553.000020"
+  },
+  "type": "event_callback",
+  "authed_users": ["U0B7PSQQY"],
+  "event_id": "Ev7GCRLZGV",
+  "event_time": 1507665553
+}
+
+
+
+
+/idle command
+
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0B7KHWKG",
+  "team_domain": "postfarm",
+  "channel_id": "C7H596WJJ",
+  "channel_name": "idlerpg",
+  "user_id": "U0B7PSQQY",
+  "user_name": "fancybone",
+  "command": "/idle",
+  "text": "banana forever",
+  "response_url": "https://hooks.slack.com/commands/T0B7KHWKG/254355341188/9MVgTE3C1GSIkQOqzCXmBhks",
+  "trigger_id": "254224913043.11257608662.9549073c343782eb4b85e2b99830e2fb"
+}
