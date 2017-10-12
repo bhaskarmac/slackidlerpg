@@ -1,13 +1,16 @@
 const datastore = {
   "last_timestamp": 1234567890, // the last time the loop started to fire
+  // at some point, this may need to be on a per-team basis if I have multiple clients running
 
-  "teams": [ $team1, $team2, $team3 ], // e.g., [ T0B7KHWKG ]
+  "teams": [ $team_id1, $team_id2, $team_id3 ], // e.g., [ T0B7KHWKG ]
+    // redis set for now
 
-  "$team:token": $token, // token required to connect to team
-  "$team:channel": $channelid, // The channel dedicated to idleRPG - e.g., C7H596WJJ
-  "$team:players": [ $player1, $player2, $player3 ], // Players currently signed up as idleRPG players - e.g., [ U0B7PSQQY ]
-  "$team:$player": {
-    "userid": $userid, // e.g., U0B7PSQQY
+  "$team_id:token": $token, // token required to connect to team
+  "$team_id:channel_id": $channelid, // The channel dedicated to idleRPG - e.g., C7H596WJJ
+  "$team_id:players": [ $player1, $player2, $player3 ], // Players currently signed up as idleRPG players - e.g., [ U0B7PSQQY ]
+      // going to store this as a redis set for now, should abstract away at some point
+  "$team_id:$player_id": {
+    "user_id": $user_id, // e.g., U0B7PSQQY
     "level": 7,
     "time_to_level": 1000, // number of seconds until user levels up
     "events": { // a list of recent events that happened to the user, FIFO queue limited to X items

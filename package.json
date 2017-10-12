@@ -16,7 +16,8 @@
     "express": "~4.15.2",
     "mocha": "^3.0.0",
     "morgan": "*",
-    "redis": "2.6.2"
+    "redis": "2.6.2",
+    "winston": "2.4.0"
   },
   "engines": {
     "node": "7.10.x",
