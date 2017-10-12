@@ -21,9 +21,9 @@ app.post('/action', (req, res) => {
     return;
   }
 
-  idle.handleEvent(req.body).then(result => {
-    res.send(result);
-  });
+  idle.handleEvent(req.body);
+
+  res.send('ok');
 });
 
 // Listens for the /idle command

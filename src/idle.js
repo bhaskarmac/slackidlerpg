@@ -29,7 +29,10 @@ function Idle(timeout_in_seconds) {
 
 Idle.prototype.handleEvent = function handleEvent(event) {
   winston.debug(`Received event: ${JSON.stringify(event)}`);
-  return Promise.resolve(`Received event: ${JSON.stringify(event)}`);
+
+  if (event.event.type === 'message') {
+    this.handleMessageEvent(event);
+  }
 };
 
 Idle.prototype.handleCommand = function handleCommand(command) {
@@ -37,9 +40,9 @@ Idle.prototype.handleCommand = function handleCommand(command) {
 
   if (command.command === '/idle') {
     return this.handleUserRegistration(command);
-  } else {
-    return Promise.resolve(`Received command: ${JSON.stringify(command)}`);
   }
+
+  return Promise.resolve(`Received command: ${JSON.stringify(command)}`);
 };
 
 Idle.prototype.start = function start() {
@@ -92,11 +95,11 @@ Idle.prototype.handlePlayer = function handlePlayer(ago, team_id, channel_id, pl
 
     winston.debug(`Processing player ${player_id} on team ${team_id}: ${JSON.stringify(player_data)}`);
 
-    player_data['time_to_level'] -= ago;
+    player_data['time_to_level'] = parseInt(player_data['time_to_level']) - ago;
 
     if (player_data['time_to_level'] <= 0) {
-      player_data['level'] += 1;
-      player_data['time_to_level'] = this.calculateTimeToLevel(player_data['level'] + 1) - player_data['time_to_level'];
+      player_data['level'] = parseInt(player_data['level']) + 1;
+      player_data['time_to_level'] = this.calculateTimeToLevel(parseInt(player_data['level']) + 1) - parseInt(player_data['time_to_level']);
       player_data['events'][Math.floor(new Date().getTime() / 1000)] = `Levelled up to ${player_data['level']}!`;
 
       this.announceLevel(player_data);
@@ -142,6 +145,13 @@ Idle.prototype.announceLevel = function announceLevel(player_data) {
   winston.info(`Player ${player_data['user_id']} has levelled up to Level ${player_data['level']}! ${player_data['time_to_level']} seconds until the next level.`);
 }
 
+Idle.prototype.announcePenalty = function announcePenalty(event, penalty, player_data) {
+  // announce the penalty event in Slack
+  // TODO - slack!
+  winston.info(`Player ${player_data['user_id']} has been penalized by ${penalty} for ${event} - must now wait ${player_data['time_to_level']} seconds until the next level.`);
+}
+
+
 Idle.prototype.handleUserRegistration = function handleUserRegistration(command) {
   return new Promise((resolve, reject) => {
     redis_client
@@ -152,34 +162,89 @@ Idle.prototype.handleUserRegistration = function handleUserRegistration(command)
     .get(`${command.team_id}:${command.user_id}`)
     .execAsync()
     .then(([teams, channel, players, data]) => {
-      // Did this team install idlerpg?
 
       if (!teams.includes(command.team_id)) {
+        // Did this team install idlerpg?
         const message = `Team ${command.team_id} (${command.team_domain}) has not installed IdleRPG - cannot register user ${command.user_id} (${command.user_name})`;
         winston.error(message);
         return resolve(message);
       } else if (command.channel_id !== channel) {
+        // Is this command being called from within #idlerpg?
         const message = `You must issue the /idle command from the ${channel} channel`; // TODO stupid, they need to know the name. All the more reason to hardcode #idlerpg
         winston.error(message);
         return resolve(message);
       } else if (players !== null && players.includes(command.user_id) && data !== null) {
+        // Is this player already registered?
         const player_data = JSON.parse(data);
         const message = `You are currently level ${player_data['level']} and have ${player_data['time_to_level']} seconds left until you level up.`;
         winston.info(message);
         return resolve(message);
       } else if (player_data === null) {
+        // Register this player!
         player_data = this.initPlayer(command.team_id, command.user_id);
         const message = `Welcome to IdleRPG! You are now level ${player_data['level']}, and have ${player_data['time_to_level']} seconds until you level up.`;
         winston.info(message);
         return resolve(message);
       } else {
+        // Uh-poh.
         const message = `Something went wrong during your registration.`;
         winston.error(message);
         return resolve(message);
       }
-
     });
   });
+};
+
+Idle.prototype.handleMessageEvent = function handleMessageEvent(event) {
+    redis_client
+    .multi()
+    .smembers('teams')
+    .get(`${event.team_id}:channel`)
+    .smembers(`${event.team_id}:players`)
+    .get(`${event.team_id}:${event.event.user}`)
+    .execAsync()
+    .then(([teams, channel, players, data]) => {
+      if (!teams.includes(event.team_id)) {
+        // Did this team install idlerpg?
+        return;
+      }
+      if (event.event.channel !== channel) {
+        // Did this take place in #idlerpg?
+        return;
+      }
+      if (players === null || !players.includes(event.event.user)) {
+        // Is this a registered player?
+        return;
+      }
+
+      // Apply penalty.
+      const player_data = (data === null)
+        ? this.initPlayer(team_id, player_id)
+        : JSON.parse(data);
+
+      const penalty = this.calculatePenalty(event.event.type, player_data);
+
+      player_data['time_to_level'] = parseInt(player_data['time_to_level']) + penalty;
+      player_data['events'][Math.floor(new Date().getTime() / 1000)] = `Penalized by ${penalty} seconds for ${event.event.type}`;
+
+      this.announcePenalty(event.event.type, penalty, player_data);
+
+      // trim player_data events
+      const keys = Object.keys(player_data['events']);
+      if (keys.length > 10) {
+        const oldest_key = Math.min(...keys);
+        delete player_data['events'][oldest_key];
+      }
+
+      redis_client.set(`${team_id}:${player_id}`, JSON.stringify(player_data));
+
+    });
+};
+
+Idle.prototype.calculatePenalty = function calculatePenalty(type, player_data) {
+  // TODO - implement
+  winston.debug(`Hardcoding a 10 second penalty ${type} for ${player_data}`);
+  return 10;
 }
 
 module.exports = Idle;
