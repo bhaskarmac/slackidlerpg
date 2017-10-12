@@ -9,5 +9,11 @@
   - have to check whether user's status has changed since we last checked
   - (I think we can subscribe to user parts/joins)
 
+3. Calculate penalty for other actions - starring, starting a thread in channel, etc.
+
 4. How is idlerpg going to know which channel it should live in?
   - might be easiest to just hardcode it for now
+
+5. Should @mention users during announcements
+
+6. Better display for "time to level", instead of just a number of seconds.

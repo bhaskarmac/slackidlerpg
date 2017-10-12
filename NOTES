@@ -10,7 +10,9 @@ const datastore = {
   "$team_id:players": [ $player1, $player2, $player3 ], // Players currently signed up as idleRPG players - e.g., [ U0B7PSQQY ]
       // going to store this as a redis set for now, should abstract away at some point
   "$team_id:$player_id": {
+    "team_id": $team_id, // e.g., T0B7KHWKG
     "user_id": $user_id, // e.g., U0B7PSQQY
+    "display_name": $display_name, // e.g., fancybone
     "level": 7,
     "time_to_level": 1000, // number of seconds until user levels up
     "events": { // a list of recent events that happened to the user, FIFO queue limited to X items

@@ -116,9 +116,12 @@ Idle.prototype.handlePlayer = function handlePlayer(ago, team_id, channel_id, pl
   });
 };
 
-Idle.prototype.initPlayer = function initPlayer(team_id, player_id) {
+Idle.prototype.initPlayer = function initPlayer(team_id, player_id, display_name) {
+
   const data = {
     "user_id": player_id,
+    "display_name": display_name === undefined ? this.getDisplayName(team_id, player_id) : display_name,
+    "team_id": team_id,
     "level": 1,
     "time_to_level": this.calculateTimeToLevel(2),
     "events": {},
@@ -141,16 +144,39 @@ Idle.prototype.calculateTimeToLevel = function calculateTimeToLevel(level) {
 
 Idle.prototype.announceLevel = function announceLevel(player_data) {
   // announce the level up event in Slack
-  // TODO - slack!
-  winston.info(`Player ${player_data['user_id']} has levelled up to Level ${player_data['level']}! ${player_data['time_to_level']} seconds until the next level.`);
+  const message = `Player *${player_data['display_name']}* has levelled up to *level ${player_data['level']}*! ${player_data['time_to_level']} seconds until the next level.`;
+  this.announce(player_data['team_id'], message);
+}
+
+Idle.prototype.announceRegistration = function announceRegistration(player_data) {
+  // announce the level up event in Slack
+  const message = `Player *${player_data['display_name']} has started playing IdleRPG! Currently at *level ${player_data['level']}*, with ${player_data['time_to_level']} seconds until the next level.`;
+  this.announce(player_data['team_id'], message);
 }
 
 Idle.prototype.announcePenalty = function announcePenalty(event, penalty, player_data) {
   // announce the penalty event in Slack
-  // TODO - slack!
-  winston.info(`Player ${player_data['user_id']} has been penalized by ${penalty} for ${event} - must now wait ${player_data['time_to_level']} seconds until the next level.`);
+  const message = `Player *${player_data['display_name']}* has been penalized by *${penalty} seconds* for *${event}* - must now wait ${player_data['time_to_level']} seconds until the next level.`;
+  this.announce(player_data['team_id'], message);
 }
 
+Idle.prototype.announce = function announce(team_id, message) {
+  redis_client
+  .multi()
+  .get(`${team_id}:token`)
+  .get(`${team_id}:channel_id`)
+  .execAsync()
+  .then(([token, channel_id]) => {
+    const slack_client = this.clients.client(token);
+    slack_client.chat.postMessage(channel_id, message, (err, res) => {
+      if (err) {
+        winston.error(`Error sending message to ${team_id}:${channel_id}: ${err}`);
+      } else {
+        winston.info(`Sent message to ${team_id}:${channel_id}: ${message}`);
+      }
+    });
+  });
+}
 
 Idle.prototype.handleUserRegistration = function handleUserRegistration(command) {
   return new Promise((resolve, reject) => {
@@ -179,11 +205,12 @@ Idle.prototype.handleUserRegistration = function handleUserRegistration(command)
         const message = `You are currently level ${player_data['level']} and have ${player_data['time_to_level']} seconds left until you level up.`;
         winston.info(message);
         return resolve(message);
-      } else if (player_data === null) {
+      } else if (players === null || !players.includes(command.user_id)) {
         // Register this player!
-        player_data = this.initPlayer(command.team_id, command.user_id);
+        player_data = this.initPlayer(command.team_id, command.user_id, command.user_name);
         const message = `Welcome to IdleRPG! You are now level ${player_data['level']}, and have ${player_data['time_to_level']} seconds until you level up.`;
         winston.info(message);
+        this.announceRegistration(player_data);
         return resolve(message);
       } else {
         // Uh-poh.
@@ -245,6 +272,11 @@ Idle.prototype.calculatePenalty = function calculatePenalty(type, player_data) {
   // TODO - implement
   winston.debug(`Hardcoding a 10 second penalty ${type} for ${player_data}`);
   return 10;
+}
+
+Idle.prototype.getDisplayName = function getDisplayName(team_id, user_id) {
+  winston.warn("getDisplayName is unimplemented"); // TODO implement
+  return "Unknown Username";
 }
 
 module.exports = Idle;
