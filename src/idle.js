@@ -29,10 +29,17 @@ function Idle(timeout_in_seconds) {
 
 Idle.prototype.handleEvent = function handleEvent(event) {
   winston.debug(`Received event: ${JSON.stringify(event)}`);
+  return Promise.resolve(`Received event: ${JSON.stringify(event)}`);
 };
 
 Idle.prototype.handleCommand = function handleCommand(command) {
   winston.debug(`Received command: ${JSON.stringify(command)}`);
+
+  if (command.command === '/idle') {
+    return this.handleUserRegistration(command);
+  } else {
+    return Promise.resolve(`Received command: ${JSON.stringify(command)}`);
+  }
 };
 
 Idle.prototype.start = function start() {
@@ -111,7 +118,8 @@ Idle.prototype.initPlayer = function initPlayer(team_id, player_id) {
     "user_id": player_id,
     "level": 1,
     "time_to_level": this.calculateTimeToLevel(2),
-    "events": {}
+    "events": {},
+    "away": false,
   };
 
   redis_client.set(`${team_id}:${player_id}`, JSON.stringify(data));
@@ -132,6 +140,46 @@ Idle.prototype.announceLevel = function announceLevel(player_data) {
   // announce the level up event in Slack
   // TODO - slack!
   winston.info(`Player ${player_data['user_id']} has levelled up to Level ${player_data['level']}! ${player_data['time_to_level']} seconds until the next level.`);
+}
+
+Idle.prototype.handleUserRegistration = function handleUserRegistration(command) {
+  return new Promise((resolve, reject) => {
+    redis_client
+    .multi()
+    .smembers('teams')
+    .get(`${command.team_id}:channel`)
+    .smembers(`${command.team_id}:players`)
+    .get(`${command.team_id}:${command.user_id}`)
+    .execAsync()
+    .then(([teams, channel, players, data]) => {
+      // Did this team install idlerpg?
+
+      if (!teams.includes(command.team_id)) {
+        const message = `Team ${command.team_id} (${command.team_domain}) has not installed IdleRPG - cannot register user ${command.user_id} (${command.user_name})`;
+        winston.error(message);
+        return resolve(message);
+      } else if (command.channel_id !== channel) {
+        const message = `You must issue the /idle command from the ${channel} channel`; // TODO stupid, they need to know the name. All the more reason to hardcode #idlerpg
+        winston.error(message);
+        return resolve(message);
+      } else if (players !== null && players.includes(command.user_id) && data !== null) {
+        const player_data = JSON.parse(data);
+        const message = `You are currently level ${player_data['level']} and have ${player_data['time_to_level']} seconds left until you level up.`;
+        winston.info(message);
+        return resolve(message);
+      } else if (player_data === null) {
+        player_data = this.initPlayer(command.team_id, command.user_id);
+        const message = `Welcome to IdleRPG! You are now level ${player_data['level']}, and have ${player_data['time_to_level']} seconds until you level up.`;
+        winston.info(message);
+        return resolve(message);
+      } else {
+        const message = `Something went wrong during your registration.`;
+        winston.error(message);
+        return resolve(message);
+      }
+
+    });
+  });
 }
 
 module.exports = Idle;

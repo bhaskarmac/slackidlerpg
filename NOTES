@@ -17,6 +17,7 @@ const datastore = {
       $timestamp1: "Penalty applied: 100 seconds added",
       $timestamp2: "User leveled up!",
     },
+    "away": false, // is the user currently set to away?
   },
 };
 

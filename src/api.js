@@ -21,18 +21,19 @@ app.post('/action', (req, res) => {
     return;
   }
 
-  idle.handleEvent(req.body);
-
-  res.send('ok');
+  idle.handleEvent(req.body).then(result => {
+    res.send(result);
+  });
 });
 
 // Listens for the /idle command
 app.post('/idle', (req, res) => {
   console.log(`/idle body: ${JSON.stringify(req.body)}`);
 
-  idle.handleCommand(req.body);
-
-  res.send(ok);
+  idle.handleCommand(req.body)
+  .then(result => {
+    res.send(result);
+  });
 });
 
 // start server

@@ -1,3 +1,4 @@
 SECRET
 node_modules
 TEST.js
+dump.rdb
