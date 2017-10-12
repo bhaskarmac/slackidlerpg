@@ -136,10 +136,7 @@ Idle.prototype.initPlayer = function initPlayer(team_id, player_id, display_name
 
 Idle.prototype.calculateTimeToLevel = function calculateTimeToLevel(level) {
   // #idlerpg
-  // return Math.floor(600 * Math.pow(1.16, level));
-
-  // let's be more generous
-  return Math.floor(60 * Math.pow(1.16, level));
+  return Math.floor(600 * Math.pow(1.16, level));
 };
 
 Idle.prototype.announceLevel = function announceLevel(player_data) {
