@@ -40,11 +40,54 @@ Idle.prototype.handleCommand = function handleCommand(command) {
 
 Idle.prototype.start = function start() {
   winston.info("Starting idle loop");
-  const that = this;
-  this.doLoop(that);
+
+  this.findChannels()
+  .then(() => {
+    winston.info(`Updated channels, starting main idle loop`);
+    this.doLoop();
+  });
 };
 
-Idle.prototype.doLoop = function doLoop(that) {
+Idle.prototype.findChannels = function findChannels() {
+  return this.storage.get('teams')
+  .then((teams) => {
+    return Promise.all(teams.map(team => {
+      return this.findChannelForTeam(team);
+    }));
+  });
+};
+
+// TODO - handle pagination at some point, see https://api.slack.com/methods/channels.list
+// TODO - there's a Promise-based version of the slack client
+Idle.prototype.findChannelForTeam = function findChannelForTeam(team_id) {
+  return new Promise( (resolve, reject) => {
+    this.storage.get(`${team_id}:token`)
+    .then(([token]) => {
+      const opts = {
+        exclude_archived: true,
+        exclude_members: true,
+      };
+      this.clients.client(token).channels.list(opts, (err, res) => {
+        if (err) {
+          winston.error(`Error getting channels for team ${team_id}: ${JSON.stringify(err)}`);
+        } else if (res.ok === false) {
+          winston.error(`Unhappy response getting channels for team ${team_id}: ${JSON.stringify(res)}`);
+        } else {
+          const channel = res.channels.find((channel) => { return channel.name === "idlerpg"; });
+          if (channel === undefined) {
+            winston.error(`#idlerpg not found for team ${team_id}`);
+          } else {
+            winston.info(`Updating #idlerpg channel for ${team_id} to ${channel.id}`);
+            this.storage.set(`${team_id}:channel_id`, channel.id);
+          }
+        }
+        resolve();
+      });
+    });
+  });
+};
+
+Idle.prototype.doLoop = function doLoop() {
   const now = Math.floor(new Date().getTime() / 1000);
 
   this.storage.get('last_timestamp', 'teams')
@@ -67,6 +110,10 @@ Idle.prototype.doLoop = function doLoop(that) {
 Idle.prototype.handleTeam = function handleTeam(ago, team_id) {
   this.storage.get(`${team_id}:token`, `${team_id}:channel_id`, `${team_id}:players`)
   .then(([token, channel_id, players]) => {
+    if (channel_id === null) {
+      winston.error(`No channel ID was found for ${team_id}; skipping.`);
+      return;
+    }
     for (player_id of players) {
       this.handlePlayer(ago, team_id, channel_id, player_id);
     }
