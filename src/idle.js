@@ -133,7 +133,7 @@ Idle.prototype.handlePlayer = function handlePlayer(ago, team_id, channel_id, pl
 
     if (player_data['time_to_level'] <= 0) {
       player_data['level'] = parseInt(player_data['level']) + 1;
-      player_data['time_to_level'] = this.calculateTimeToLevel(parseInt(player_data['level']) + 1) + parseInt(player_data['time_to_level']);
+      player_data['time_to_level'] = this.calculateTimeToLevel(parseInt(player_data['level'])) + parseInt(player_data['time_to_level']);
       player_data['events'][Math.floor(new Date().getTime() / 1000)] = `Levelled up to ${player_data['level']}!`;
 
       this.announceLevel(player_data);
