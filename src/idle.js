@@ -1,15 +1,7 @@
 const winston = require('winston');
-const redis = require('redis')
-const bluebird = require('bluebird')
-bluebird.promisifyAll(redis.RedisClient.prototype);
-bluebird.promisifyAll(redis.Multi.prototype);
 
 const Clients = require('./clients');
-
-const redis_client = redis.createClient({
-  host: process.env.REDIS_HOST || '127.0.0.1',
-  port: process.env.REDIS_PORT || 6379,
-});
+const Storage = require('./storage-redis');
 
 winston.level = 'debug';
 winston.remove(winston.transports.Console);
@@ -24,6 +16,7 @@ winston.add(winston.transports.Console, {
 
 function Idle(timeout_in_seconds) {
   this.clients = new Clients();
+  this.storage = new Storage();
   this.timeout_in_seconds = timeout_in_seconds || 10;
 }
 
@@ -54,13 +47,10 @@ Idle.prototype.start = function start() {
 Idle.prototype.doLoop = function doLoop(that) {
   const now = Math.floor(new Date().getTime() / 1000);
 
-  redis_client.multi()
-    .get('last_timestamp')
-    .smembers('teams')
-    .execAsync()
+  this.storage.get('last_timestamp', 'teams')
     .then(([last_timestamp, teams]) => {
       const ago = (last_timestamp === null) ? 0 : (now - parseInt(last_timestamp));
-      redis_client.set('last_timestamp', now);
+      this.storage.set('last_timestamp', now);
 
       winston.info(`Running loop at ${now}; last ran ${ago} seconds ago`);
 
@@ -75,20 +65,17 @@ Idle.prototype.doLoop = function doLoop(that) {
 };
 
 Idle.prototype.handleTeam = function handleTeam(ago, team_id) {
-  redis_client.multi()
-    .get(`${team_id}:token`)
-    .get(`${team_id}:channel_id`)
-    .smembers(`${team_id}:players`)
-    .execAsync()
-    .then(([token, channel_id, players]) => {
-      for (player_id of players) {
-        this.handlePlayer(ago, team_id, channel_id, player_id);
-      }
-    });
+  this.storage.get(`${team_id}:token`, `${team_id}:channel_id`, `${team_id}:players`)
+  .then(([token, channel_id, players]) => {
+    for (player_id of players) {
+      this.handlePlayer(ago, team_id, channel_id, player_id);
+    }
+  });
 };
 
 Idle.prototype.handlePlayer = function handlePlayer(ago, team_id, channel_id, player_id) {
-  redis_client.getAsync(`${team_id}:${player_id}`).then((data) => {
+  this.storage.get(`${team_id}:${player_id}`)
+  .then((data) => {
     const player_data = (data === null)
       ? this.initPlayer(team_id, player_id)
       : JSON.parse(data);
@@ -112,7 +99,7 @@ Idle.prototype.handlePlayer = function handlePlayer(ago, team_id, channel_id, pl
       }
     }
 
-    redis_client.set(`${team_id}:${player_id}`, JSON.stringify(player_data));
+    this.storage.set(`${team_id}:${player_id}`, JSON.stringify(player_data));
   });
 };
 
@@ -128,8 +115,8 @@ Idle.prototype.initPlayer = function initPlayer(team_id, player_id, display_name
     "away": false,
   };
 
-  redis_client.set(`${team_id}:${player_id}`, JSON.stringify(data));
-  redis_client.sadd(`${team_id}:players`, player_id);
+  this.storage.set(`${team_id}:${player_id}`, JSON.stringify(data));
+  this.storage.sadd(`${team_id}:players`, player_id);
 
   return data;
 };
@@ -158,11 +145,7 @@ Idle.prototype.announcePenalty = function announcePenalty(event, penalty, player
 }
 
 Idle.prototype.announce = function announce(team_id, message) {
-  redis_client
-  .multi()
-  .get(`${team_id}:token`)
-  .get(`${team_id}:channel_id`)
-  .execAsync()
+  this.storage.get(`${team_id}:token`, `${team_id}:channel_id`)
   .then(([token, channel_id]) => {
     const slack_client = this.clients.client(token);
     slack_client.chat.postMessage(channel_id, message, (err, res) => {
@@ -177,15 +160,8 @@ Idle.prototype.announce = function announce(team_id, message) {
 
 Idle.prototype.handleUserRegistration = function handleUserRegistration(command) {
   return new Promise((resolve, reject) => {
-    redis_client
-    .multi()
-    .smembers('teams')
-    .get(`${command.team_id}:channel`)
-    .smembers(`${command.team_id}:players`)
-    .get(`${command.team_id}:${command.user_id}`)
-    .execAsync()
+    this.storage.get('teams', `${command.team_id}:channel_id`, `${command.team_id}:players`, `${command.team_id}:${command.user_id}`)
     .then(([teams, channel, players, data]) => {
-
       if (!teams.includes(command.team_id)) {
         // Did this team install idlerpg?
         const message = `Team ${command.team_id} (${command.team_domain}) has not installed IdleRPG - cannot register user ${command.user_id} (${command.user_name})`;
@@ -220,13 +196,7 @@ Idle.prototype.handleUserRegistration = function handleUserRegistration(command)
 };
 
 Idle.prototype.handleMessageEvent = function handleMessageEvent(event) {
-    redis_client
-    .multi()
-    .smembers('teams')
-    .get(`${event.team_id}:channel`)
-    .smembers(`${event.team_id}:players`)
-    .get(`${event.team_id}:${event.event.user}`)
-    .execAsync()
+    this.storage.get('teams', `${event.team_id}:channel_id`, `${event.team_id}:players`, `${event.team_id}:${event.event.user}`)
     .then(([teams, channel, players, data]) => {
       if (!teams.includes(event.team_id)) {
         // Did this team install idlerpg?
@@ -260,14 +230,14 @@ Idle.prototype.handleMessageEvent = function handleMessageEvent(event) {
         delete player_data['events'][oldest_key];
       }
 
-      redis_client.set(`${team_id}:${player_id}`, JSON.stringify(player_data));
+      this.storage.set(`${team_id}:${player_id}`, JSON.stringify(player_data));
 
     });
 };
 
 Idle.prototype.calculatePenalty = function calculatePenalty(type, player_data) {
   // TODO - implement
-  winston.debug(`Hardcoding a 10 second penalty ${type} for ${player_data}`);
+  winston.debug(`Hardcoding a 10 second penalty ${type} for ${JSON.stringify(player_data)}`);
   return 10;
 }
 

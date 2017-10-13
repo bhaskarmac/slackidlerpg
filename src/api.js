@@ -3,7 +3,7 @@ const bodyParser = require('body-parser')
 
 const Idle = require('./idle');
 
-const API_PORT = process.env.API_PORT || 8080;
+const API_PORT = process.env.API_PORT || 8010;
 const idle = new Idle();
 
 var app = express();
