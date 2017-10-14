@@ -27,8 +27,6 @@ function Idle(timeout_in_seconds) {
 }
 
 Idle.prototype.handleEvent = function handleEvent(event) {
-  winston.debug(`Received event: ${JSON.stringify(event)}`);
-
   if (event.event.type === 'message') {
     this.handleMessageEvent(event);
   }
@@ -133,7 +131,8 @@ Idle.prototype.handlePlayer = function handlePlayer(ago, team_id, channel_id, pl
       ? this.initPlayer(team_id, player_id)
       : JSON.parse(data);
 
-    winston.debug(`Processing player ${player_id} on team ${team_id}: ${JSON.stringify(player_data)}`);
+    const { events, ...debug_data } = player_data;
+    winston.debug(`Processing player ${player_id} on team ${team_id}: ${JSON.stringify(debug_data)}`);
 
     player_data['time_to_level'] = parseInt(player_data['time_to_level']) - ago;
 
@@ -263,6 +262,8 @@ Idle.prototype.handleMessageEvent = function handleMessageEvent(event) {
         // Is this a registered player?
         return;
       }
+
+      winston.debug(`Handling message event: ${JSON.stringify(event)}`);
 
       // Apply penalty.
       const player_data = (data === null)
