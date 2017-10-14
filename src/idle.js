@@ -133,7 +133,7 @@ Idle.prototype.handlePlayer = function handlePlayer(ago, team_id, channel_id, pl
 
     if (player_data['time_to_level'] <= 0) {
       player_data['level'] = parseInt(player_data['level']) + 1;
-      player_data['time_to_level'] = this.calculateTimeToLevel(parseInt(player_data['level'])) + parseInt(player_data['time_to_level']);
+      player_data['time_to_level'] = this.calculateTimeToLevel(parseInt(player_data['level'])+1) + parseInt(player_data['time_to_level']);
       player_data['events'][Math.floor(new Date().getTime() / 1000)] = `Levelled up to ${player_data['level']}!`;
 
       this.announceLevel(player_data);
@@ -170,7 +170,7 @@ Idle.prototype.initPlayer = function initPlayer(team_id, player_id, display_name
 
 Idle.prototype.calculateTimeToLevel = function calculateTimeToLevel(level) {
   // #idlerpg
-  return Math.floor(600 * Math.pow(1.16, level));
+  return Math.floor(600 * Math.pow(1.16, level-1));
 };
 
 Idle.prototype.announceLevel = function announceLevel(player_data) {
@@ -181,7 +181,7 @@ Idle.prototype.announceLevel = function announceLevel(player_data) {
 
 Idle.prototype.announceRegistration = function announceRegistration(player_data) {
   // announce the level up event in Slack
-  const message = `Player *${player_data['display_name']} has started playing IdleRPG! Currently at *level ${player_data['level']}*, with ${player_data['time_to_level']} seconds until the next level.`;
+  const message = `Player *${player_data['display_name']}* has started playing IdleRPG! Currently at *level ${player_data['level']}*, with ${player_data['time_to_level']} seconds until the next level.`;
   this.announce(player_data['team_id'], message);
 }
 
