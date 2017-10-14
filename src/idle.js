@@ -248,17 +248,21 @@ Idle.prototype.handleUserRegistration = function handleUserRegistration(command)
 };
 
 Idle.prototype.handleMessageEvent = function handleMessageEvent(event) {
-    this.storage.get('teams', `${event.team_id}:channel_id`, `${event.team_id}:players`, `${event.team_id}:${event.event.user}`)
-    .then(([teams, channel, players, data]) => {
-      if (!teams.includes(event.team_id)) {
+    const player_id = event.event.user;
+    const team_id = event.team_id;
+    const event_channel_id = event.event.channel;
+
+    this.storage.get('teams', `${team_id}:channel_id`, `${team_id}:players`, `${team_id}:${player_id}`)
+    .then(([teams, channel_id, players, data]) => {
+      if (!teams.includes(team_id)) {
         // Did this team install idlerpg?
         return;
       }
-      if (event.event.channel !== channel) {
+      if (event_channel_id !== channel_id) {
         // Did this take place in #idlerpg?
         return;
       }
-      if (players === null || !players.includes(event.event.user)) {
+      if (players === null || !players.includes(player_id)) {
         // Is this a registered player?
         return;
       }
