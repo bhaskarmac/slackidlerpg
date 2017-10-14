@@ -1,4 +1,5 @@
 const winston = require('winston');
+const SlackWebClient = require('@slack/client').WebClient;
 
 const Clients = require('./clients');
 const Storage = require('./storage-redis');
@@ -18,6 +19,11 @@ function Idle(timeout_in_seconds) {
   this.clients = new Clients();
   this.storage = new Storage();
   this.timeout_in_seconds = timeout_in_seconds || 10;
+
+  // crap self if these aren't set, since they're required
+  this.client_id = process.env.CLIENT_ID;
+  this.client_secret = process.env.CLIENT_SECRET;
+  this.redirect = process.env.REDIRECT_URI;
 }
 
 Idle.prototype.handleEvent = function handleEvent(event) {
@@ -292,5 +298,27 @@ Idle.prototype.getDisplayName = function getDisplayName(team_id, user_id) {
   winston.warn("getDisplayName is unimplemented"); // TODO implement
   return "Unknown Username";
 }
+
+Idle.prototype.authorize = function authorize(code) {
+  return new Promise((resolve ,reject) => {
+    var client = new SlackWebClient();
+    client.oauth.access(this.client_id, this.client_secret, code, this.redirect_uri, (err, res) => {
+      if (err) {
+        const message = `OAuth error: ${JSON.stringify(err)}`;
+        winston.error(message);
+        resolve(message);
+      } else if (!res.ok) {
+        const message = `Bad OAuth response: ${JSON.stringify(res)}`;
+        winston.error(message);
+        resolve(message);
+      } else {
+        winston.debug(`OAuth response: ${JSON.stringify(res)}`);
+        this.storage.set(`${res.team_id}:token`, res.access_token);
+        this.storage.add('teams', res.team_id);
+        resolve('You must create a channel named #idlerpg in order for this app to work.');
+      }
+    });
+  });
+};
 
 module.exports = Idle;

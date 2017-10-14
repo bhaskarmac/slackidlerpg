@@ -36,6 +36,25 @@ app.post('/idle', (req, res) => {
   });
 });
 
+// OAuth for distribution
+app.get('/authorize', (req, res) => {
+  console.log(`Request query: ${JSON.stringify(req.query)}`);
+
+  if (!req.query) {
+    res.send('Query missing.');
+    return;
+  }
+  if (!req.query.code) {
+    res.send('OAuth code missing.');
+    return;
+  }
+
+  idle.authorize(req.query.code)
+  .then((response) => {
+    res.send(response);
+  });
+});
+
 // start server
 app.listen(API_PORT, function () {
   console.log(`Listening on ${API_PORT}`);
