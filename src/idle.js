@@ -50,7 +50,7 @@ Idle.prototype.start = function start() {
 
 Idle.prototype.findChannels = function findChannels() {
   return this.storage.get('teams')
-  .then((teams) => {
+  .then(([teams]) => {
     return Promise.all(teams.map(team => {
       return this.findChannelForTeam(team);
     }));
@@ -122,7 +122,7 @@ Idle.prototype.handleTeam = function handleTeam(ago, team_id) {
 
 Idle.prototype.handlePlayer = function handlePlayer(ago, team_id, channel_id, player_id) {
   this.storage.get(`${team_id}:${player_id}`)
-  .then((data) => {
+  .then(([data]) => {
     const player_data = (data === null)
       ? this.initPlayer(team_id, player_id)
       : JSON.parse(data);
@@ -163,7 +163,7 @@ Idle.prototype.initPlayer = function initPlayer(team_id, player_id, display_name
   };
 
   this.storage.set(`${team_id}:${player_id}`, JSON.stringify(data));
-  this.storage.sadd(`${team_id}:players`, player_id);
+  this.storage.add(`${team_id}:players`, player_id);
 
   return data;
 };
