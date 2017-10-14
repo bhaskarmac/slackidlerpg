@@ -299,6 +299,8 @@ Idle.prototype.getDisplayName = function getDisplayName(team_id, user_id) {
   return "Unknown Username";
 }
 
+// TODO - clean this up, extract this out, everything here is gross
+// shouldn't log the access tokens, either
 Idle.prototype.authorize = function authorize(code) {
   return new Promise((resolve ,reject) => {
     var client = new SlackWebClient();
