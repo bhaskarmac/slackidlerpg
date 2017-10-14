@@ -248,49 +248,49 @@ Idle.prototype.handleUserRegistration = function handleUserRegistration(command)
 };
 
 Idle.prototype.handleMessageEvent = function handleMessageEvent(event) {
-    const player_id = event.event.user;
-    const team_id = event.team_id;
-    const event_channel_id = event.event.channel;
+  const player_id = event.event.user;
+  const team_id = event.team_id;
+  const event_channel_id = event.event.channel;
 
-    this.storage.get('teams', `${team_id}:channel_id`, `${team_id}:players`, `${team_id}:${player_id}`)
-    .then(([teams, channel_id, players, data]) => {
-      if (!teams.includes(team_id)) {
-        // Did this team install idlerpg?
-        return;
-      }
-      if (event_channel_id !== channel_id) {
-        // Did this take place in #idlerpg?
-        return;
-      }
-      if (players === null || !players.includes(player_id)) {
-        // Is this a registered player?
-        return;
-      }
+  this.storage.get('teams', `${team_id}:channel_id`, `${team_id}:players`, `${team_id}:${player_id}`)
+  .then(([teams, channel_id, players, data]) => {
+    if (!teams.includes(team_id)) {
+      // Did this team install idlerpg?
+      return;
+    }
+    if (event_channel_id !== channel_id) {
+      // Did this take place in #idlerpg?
+      return;
+    }
+    if (players === null || !players.includes(player_id)) {
+      // Is this a registered player?
+      return;
+    }
 
-      winston.debug(`Handling message event: ${JSON.stringify(event)}`);
+    winston.debug(`Handling message event: ${JSON.stringify(event)}`);
 
-      // Apply penalty.
-      const player_data = (data === null)
-        ? this.initPlayer(team_id, player_id)
-        : JSON.parse(data);
+    // Apply penalty.
+    const player_data = (data === null)
+      ? this.initPlayer(team_id, player_id)
+      : JSON.parse(data);
 
-      const penalty = this.calculatePenalty(event.event.type, player_data);
+    const penalty = this.calculatePenalty(event.event.type, player_data);
 
-      player_data['time_to_level'] = parseInt(player_data['time_to_level']) + penalty;
-      player_data['events'][Math.floor(new Date().getTime() / 1000)] = `Penalized by ${penalty} seconds for ${event.event.type}`;
+    player_data['time_to_level'] = parseInt(player_data['time_to_level']) + penalty;
+    player_data['events'][Math.floor(new Date().getTime() / 1000)] = `Penalized by ${penalty} seconds for ${event.event.type}`;
 
-      this.announcePenalty(event.event.type, penalty, player_data);
+    this.announcePenalty(event.event.type, penalty, player_data);
 
-      // trim player_data events
-      const keys = Object.keys(player_data['events']);
-      if (keys.length > 10) {
-        const oldest_key = Math.min(...keys);
-        delete player_data['events'][oldest_key];
-      }
+    // trim player_data events
+    const keys = Object.keys(player_data['events']);
+    if (keys.length > 10) {
+      const oldest_key = Math.min(...keys);
+      delete player_data['events'][oldest_key];
+    }
 
-      this.storage.set(`${team_id}:${player_id}`, JSON.stringify(player_data));
+    this.storage.set(`${team_id}:${player_id}`, JSON.stringify(player_data));
 
-    });
+  });
 };
 
 Idle.prototype.calculatePenalty = function calculatePenalty(type, player_data) {
