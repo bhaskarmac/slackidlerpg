@@ -180,19 +180,19 @@ Idle.prototype.calculateTimeToLevel = function calculateTimeToLevel(level) {
 
 Idle.prototype.announceLevel = function announceLevel(player_data) {
   // announce the level up event in Slack
-  const message = `Player *${player_data['display_name']}* has levelled up to *level ${player_data['level']}*! ${player_data['time_to_level']} seconds until the next level.`;
+  const message = `Player <@${player_data['user_id']}> has levelled up to *level ${player_data['level']}*! ${player_data['time_to_level']} seconds until the next level.`;
   this.announce(player_data['team_id'], message);
 }
 
 Idle.prototype.announceRegistration = function announceRegistration(player_data) {
   // announce the level up event in Slack
-  const message = `Player *${player_data['display_name']}* has started playing IdleRPG! Currently at *level ${player_data['level']}*, with ${player_data['time_to_level']} seconds until the next level.`;
+  const message = `Player <@${player_data['user_id']}> has started playing IdleRPG! Currently at *level ${player_data['level']}*, with ${player_data['time_to_level']} seconds until the next level.`;
   this.announce(player_data['team_id'], message);
 }
 
 Idle.prototype.announcePenalty = function announcePenalty(event, penalty, player_data) {
   // announce the penalty event in Slack
-  const message = `Player *${player_data['display_name']}* has been penalized by *${penalty} seconds* for *${event}* - must now wait ${player_data['time_to_level']} seconds until the next level.`;
+  const message = `Player <@${player_data['user_id']}> has been penalized by *${penalty} seconds* for *${event}* - must now wait ${player_data['time_to_level']} seconds until the next level.`;
   this.announce(player_data['team_id'], message);
 }
 
