@@ -3,6 +3,7 @@ const SlackWebClient = require('@slack/client').WebClient;
 
 const Clients = require('./clients');
 const Storage = require('./storage-redis');
+const timeUntilLevelupString = require('./TimeUtil');
 
 winston.level = 'debug';
 winston.remove(winston.transports.Console);
@@ -177,23 +178,6 @@ Idle.prototype.calculateTimeToLevel = function calculateTimeToLevel(level) {
   // #idlerpg
   return Math.floor(600 * Math.pow(1.16, level-1));
 };
-
-function calculateHoursMinutesSeconds(seconds) {
-  const hours = Math.floor(seconds / 3600);
-  seconds = seconds - hours * 3600;
-  const minutes = Math.floor(seconds / 60);
-  seconds = seconds - minutes * 60;
-  return {
-    hours,
-    minutes,
-    seconds,
-  };
-}
-
-function timeUntilLevelupString(seconds) {
-  const hms = calculateHoursMinutesSeconds(seconds);
-  return `${hms.hours} hours, ${hms.minutes} minutes, ${hms.seconds} seconds`;
-}
 
 Idle.prototype.announceLevel = function announceLevel(player_data) {
   // announce the level up event in Slack
