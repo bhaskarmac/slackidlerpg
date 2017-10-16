@@ -194,12 +194,6 @@ Idle.prototype.announceRegistration = function announceRegistration(player_data)
   this.announce(player_data['team_id'], message);
 }
 
-Idle.prototype.announcePenalty = function announcePenalty(event, penalty, player_data) {
-  // announce the penalty event in Slack
-  const message = `Player <@${player_data['user_id']}> has been penalized by *${penalty} seconds* for *${event}* - must now wait ${timeUntilLevelupString(player_data['time_to_level'])} until the next level.`;
-  this.announce(player_data['team_id'], message);
-}
-
 Idle.prototype.announceReset = function announceReset(team_id, players) {
   const message = `The game has been reset - ${players.length} players idled.`;
   this.announce(team_id, message);
@@ -347,12 +341,14 @@ Idle.prototype.handleMessageEvent = function handleMessageEvent(event) {
       ? this.initPlayer(team_id, player_id)
       : JSON.parse(data);
 
-    const penalty = this.calculatePenalty(event.event.type, player_data);
+    const penalty = Math.floor(event.event.text.length * Math.pow(1.14, player_data.level));
 
     player_data['time_to_level'] = parseInt(player_data['time_to_level']) + penalty;
     player_data['events'][Math.floor(new Date().getTime() / 1000)] = `Penalized by ${penalty} seconds for ${event.event.type}`;
 
-    this.announcePenalty(event.event.type, penalty, player_data);
+    const message = `User <@${player_data['user_id']}> penalized *${timeUntilLevelupString(penalty)}* for a message of length ${event.event.text.length}. New time to level ${player_data['level']+1}: *${timeUntilLevelupString(player_data['time_to_level'])}*.`;
+
+    this.announce(player_data['team_id'], message);
 
     // trim player_data events
     const keys = Object.keys(player_data['events']);
@@ -365,12 +361,6 @@ Idle.prototype.handleMessageEvent = function handleMessageEvent(event) {
 
   });
 };
-
-Idle.prototype.calculatePenalty = function calculatePenalty(type, player_data) {
-  // TODO - implement
-  winston.debug(`Hardcoding a 10 second penalty ${type} for ${JSON.stringify(player_data)}`);
-  return 10;
-}
 
 Idle.prototype.getDisplayName = function getDisplayName(team_id, user_id) {
   winston.warn("getDisplayName is unimplemented"); // TODO implement
