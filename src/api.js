@@ -36,6 +36,16 @@ app.post('/idle', (req, res) => {
   });
 });
 
+// Listens for the /idlereset command
+app.post('/reset', (req, res) => {
+  console.log(`/reset body: ${JSON.stringify(req.body)}`);
+
+  idle.handleCommand(req.body)
+  .then(result => {
+    res.send(result);
+  });
+});
+
 // OAuth for distribution
 app.get('/authorize', (req, res) => {
   console.log(`Request query: ${JSON.stringify(req.query)}`);
