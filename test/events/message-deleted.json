@@ -1,0 +1,30 @@
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0B7KHWKG",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "type": "message",
+    "deleted_ts": "1508172411.000226",
+    "subtype": "message_deleted",
+    "hidden": true,
+    "channel": "C7H596WJJ",
+    "previous_message": {
+      "type": "message",
+      "user": "U0B7PSQQY",
+      "text": "pooping HARDEREST",
+      "edited": {
+        "user": "U0B7PSQQY",
+        "ts": "1508172787.000000"
+      },
+      "ts": "1508172411.000226"
+    },
+    "event_ts": "1508172851.000093",
+    "ts": "1508172851.000093"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7JB1ACKA",
+  "event_time": 1508172851,
+  "authed_users": [
+    "U0B7PSQQY"
+  ]
+}
