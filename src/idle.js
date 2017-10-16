@@ -39,6 +39,9 @@ Idle.prototype.handleCommand = function handleCommand(command) {
   if (command.command === '/idle') {
     return this.handleUserRegistration(command);
   }
+  if (command.command === '/idlereset') {
+    return this.handleGameReset(command);
+  }
 
   return Promise.resolve(`Received command: ${JSON.stringify(command)}`);
 };
@@ -197,6 +200,11 @@ Idle.prototype.announcePenalty = function announcePenalty(event, penalty, player
   this.announce(player_data['team_id'], message);
 }
 
+Idle.prototype.announceReset = function announceReset(team_id, players) {
+  const message = `The game has been reset - ${players.length} players idled.`;
+  this.announce(team_id, message);
+};
+
 Idle.prototype.announce = function announce(team_id, message) {
   this.storage.get(`${team_id}:token`, `${team_id}:channel_id`)
   .then(([token, channel_id]) => {
@@ -245,6 +253,70 @@ Idle.prototype.handleUserRegistration = function handleUserRegistration(command)
         return resolve(message);
       }
     });
+  });
+};
+
+Idle.prototype.handleGameReset = function handleGameReset(command) {
+  return new Promise((resolve, reject) => {
+    const user_id = command.user_id;
+    const team_id = command.team_id;
+    const team_domain = command.team_domain;
+    this.storage.get('teams', `${team_id}:token`, `${team_id}:players`)
+    .then(([teams, token, players]) => {
+      // Did this team install idlerpg?
+      if (!teams.includes(team_id)) {
+        const message = `Team ${team_id} (${team_domain}) has not installed IdleRPG.`;
+        winston.error(message);
+        return resolve(message);
+      }
+
+      // verify that user is an admin
+      const slack_client = this.clients.client(token);
+      slack_client.users.info(user_id, (err, res) => {
+        if (err) {
+          const message = `Error fetching info for user ${user_id}: ${JSON.stringify(err)}`;
+          winston.error(message);
+          resolve(message);
+        } else if (!res.ok) {
+          const message = `Bad response fetching info for user ${user_id}: ${JSON.stringify(res)}`;
+          winston.error(message);
+          resolve(message);
+        } else if (res.user.is_admin === false) {
+          // maybe comment in the channel and tell everyone to boo this man
+          const message = `Only admins are allowed to reset IdleRPG for team ${team_id}.`;
+          winston.error(message);
+          resolve(message);
+        } else {
+          const message = `Resetting game for team ${team_id}`;
+          winston.debug(message);
+          resolve(message);
+          this.resetGame(team_id);
+        }
+      });
+    });
+  });
+};
+
+Idle.prototype.resetGame = function resetGame(team_id) {
+  this.storage.get('teams', `${team_id}:token`, `${team_id}:players`)
+    .then(([teams, token, players]) => {
+      // Did this team install idlerpg?
+      if (!teams.includes(team_id)) {
+        winston.error(`Attempted to reset idleRPG for ${team_id}, which is not registered.`);
+        return;
+      }
+
+      for (player_id of players) {
+        winston.debug(`Deleting data for ${team_id}:${player_id}`);
+        this.storage.remove(`${team_id}:${player_id}`);
+        // Message player directly?
+      }
+
+      winston.debug(`Clearing player data for ${team_id}`);
+      this.storage.remove(`${team_id}:players`);
+
+      // Announce highest level achieved, total time spent idling, highest penalty? Something fancy.
+      this.announceReset(team_id, players);
   });
 };
 

@@ -37,6 +37,10 @@ Storage.prototype.add = function add(key, val) {
   return this.redis_client.sadd(key, val);
 }
 
+Storage.prototype.remove = function remove(key) {
+  return this.redis_client.del(key);
+}
+
 Storage.prototype._isNumber = function _isNumber(key) {
   return key === 'last_timestamp'
     || false;
