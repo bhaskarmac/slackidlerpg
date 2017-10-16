@@ -15,3 +15,7 @@ Environment variables:
 - `CLIENT_ID` - your app's client ID.
 - `CLIENT_SECRET` - your app's client secret.
 - `VERIFICATION_TOKEN` - your app's verification token. Find these under "Basic Information > App Credentials" in your app's settings.
+
+
+- To add an event, you must also add the appropriate OAuth scope
+ - e.g., to listen for stars, you must subscribe to the event AND separately add the stars:read oauth permission
