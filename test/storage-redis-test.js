@@ -16,6 +16,7 @@ const redisMultiSpy = {
 
 const redisClientProxy = {
   multi: sinon.stub().returns(redisMultiSpy),
+  del: sinon.stub(),
 };
 
 const redisProxy = {
@@ -31,14 +32,14 @@ const storage = new Storage();
 
 describe('storage-redis', () => {
 
+  beforeEach(() => {
+    for(spy in redisMultiSpy) {
+      redisMultiSpy[spy].reset();
+    }
+  });
+
+
   describe('correctly retrieves data', () => {
-
-    beforeEach(() => {
-      for(spy in redisMultiSpy) {
-        redisMultiSpy[spy].reset();
-      }
-    });
-
     it('executes multi() call', () => {
       storage.get('something');
       assert.equal(redisClientProxy.multi.called, true, 'multi() call executed');
@@ -72,7 +73,11 @@ describe('storage-redis', () => {
       assert.equal(redisMultiSpy.smembers.called, true, 'smembers called for a set');
       assert.equal(redisMultiSpy.get.called, true, 'get called for a string');
     });
+  });
 
+  it('correctly deletes data', () => {
+    storage.remove('some-key');
+    assert.equal(redisClientProxy.del.called, true, 'del called');
   });
 
   describe('correctly identifies key types', () => {
