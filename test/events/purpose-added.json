@@ -1,0 +1,21 @@
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0HE0MF52",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "user": "U0JULDCGH",
+    "purpose": "What the fuck is a purpose",
+    "text": "<@U0JULDCGH> set the channel purpose: What the fuck is a purpose",
+    "type": "message",
+    "subtype": "channel_purpose",
+    "ts": "1508161869.000048",
+    "channel": "C7JCG4FV3",
+    "event_ts": "1508161869.000048"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7JQBM5DH",
+  "event_time": 1508161869,
+  "authed_users": [
+    "U0JULDCGH"
+  ]
+}

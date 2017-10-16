@@ -1,0 +1,21 @@
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0HE0MF52",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "type": "message",
+    "user": "U0JULDCGH",
+    "text": "THREADING THIS SHIT YO",
+    "thread_ts": "1508160764.000265",
+    "parent_user_id": "U0JULDCGH",
+    "ts": "1508161382.000516",
+    "channel": "C7JCG4FV3",
+    "event_ts": "1508161382.000516"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7JB6VB7T",
+  "event_time": 1508161382,
+  "authed_users": [
+    "U0JULDCGH"
+  ]
+}

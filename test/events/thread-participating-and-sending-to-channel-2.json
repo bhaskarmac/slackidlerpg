@@ -1,0 +1,62 @@
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0HE0MF52",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "type": "message",
+    "message": {
+      "text": "I am participating in a thread and also sending it to <#C7JCG4FV3|idlerpg>",
+      "type": "message",
+      "thread_ts": "1508160764.000265",
+      "root": {
+        "type": "message",
+        "user": "U0JULDCGH",
+        "text": "banana",
+        "thread_ts": "1508160764.000265",
+        "reply_count": 4,
+        "replies": [
+          {
+            "user": "U0JULDCGH",
+            "ts": "1508161382.000516"
+          },
+          {
+            "user": "U0JULDCGH",
+            "ts": "1508161437.000453"
+          },
+          {
+            "user": "U0JULDCGH",
+            "ts": "1508161481.000450"
+          },
+          {
+            "user": "U0JULDCGH",
+            "ts": "1508161490.000040"
+          }
+        ],
+        "unread_count": 4,
+        "ts": "1508160764.000265"
+      },
+      "subtype": "thread_broadcast",
+      "user": "U0JULDCGH",
+      "ts": "1508161490.000040"
+    },
+    "subtype": "message_changed",
+    "hidden": true,
+    "channel": "C7JCG4FV3",
+    "previous_message": {
+      "type": "message",
+      "user": "U0JULDCGH",
+      "text": "I am participating in a thread and also sending it to <#C7JCG4FV3|idlerpg>",
+      "thread_ts": "1508160764.000265",
+      "parent_user_id": "U0JULDCGH",
+      "ts": "1508161490.000040"
+    },
+    "event_ts": "1508161490.000117",
+    "ts": "1508161490.000117"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7KP2HYBY",
+  "event_time": 1508161490,
+  "authed_users": [
+    "U0JULDCGH"
+  ]
+}

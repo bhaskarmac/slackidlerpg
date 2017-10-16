@@ -1,0 +1,75 @@
+// No message event is sent for this
+
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0HE0MF52",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "type": "pin_removed",
+    "user": "U0JULDCGH",
+    "channel_id": "C7JCG4FV3",
+    "item": {
+      "type": "message",
+      "channel": "C7JCG4FV3",
+      "message": {
+        "type": "message",
+        "user": "U0JULDCGH",
+        "text": "banana",
+        "thread_ts": "1508160764.000265",
+        "reply_count": 4,
+        "replies": [
+          {
+            "user": "U0JULDCGH",
+            "ts": "1508161382.000516"
+          },
+          {
+            "user": "U0JULDCGH",
+            "ts": "1508161437.000453"
+          },
+          {
+            "user": "U0JULDCGH",
+            "ts": "1508161481.000450"
+          },
+          {
+            "user": "U0JULDCGH",
+            "ts": "1508161490.000040"
+          }
+        ],
+        "subscribed": true,
+        "last_read": "1508161490.000040",
+        "unread_count": 0,
+        "ts": "1508160764.000265",
+        "permalink": "https://rnycmeetups.slack.com/archives/C7JCG4FV3/p1508160764000265",
+        "is_starred": true,
+        "reactions": [
+          {
+            "name": "joy",
+            "users": [
+              "U0JULDCGH"
+            ],
+            "count": 1
+          },
+          {
+            "name": "disappointed",
+            "users": [
+              "U0JULDCGH"
+            ],
+            "count": 1
+          }
+        ]
+      },
+      "created": 1508161227,
+      "created_by": "U0JULDCGH"
+    },
+    "item_user": "U0JULDCGH",
+    "pin_count": "1",
+    "has_pins": true,
+    "event_ts": "1508161678.000290"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7K170GS1",
+  "event_time": 1508161678,
+  "authed_users": [
+    "U0JULDCGH"
+  ]
+}

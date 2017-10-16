@@ -1,0 +1,23 @@
+// Not visible to others; do not penalize.
+
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0HE0MF52",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "type": "star_added",
+    "user": "U0JULDCGH",
+    "item": {
+      "type": "channel",
+      "channel": "C7JCG4FV3",
+      "date_create": 1508161609
+    },
+    "event_ts": "1508161609.000494"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7K16B493",
+  "event_time": 1508161609,
+  "authed_users": [
+    "U0JULDCGH"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0HE0MF52",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "user": "U0JULDCGH",
+    "topic": "Type `/idle` to play. \n\nThis is in Alpha, and will be reset frequently.\n\n<https://github.com/pavellishin/slackidlerpg>\n\nTOPIC CHANGE LOL",
+    "text": "<@U0JULDCGH> set the channel topic: Type `/idle` to play. \n\nThis is in Alpha, and will be reset frequently.\n\n<https://github.com/pavellishin/slackidlerpg>\n\nTOPIC CHANGE LOL",
+    "type": "message",
+    "subtype": "channel_topic",
+    "ts": "1508161336.000184",
+    "channel": "C7JCG4FV3",
+    "event_ts": "1508161336.000184"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7JSE31L2",
+  "event_time": 1508161336,
+  "authed_users": [
+    "U0JULDCGH"
+  ]
+}

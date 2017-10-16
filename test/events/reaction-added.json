@@ -1,0 +1,23 @@
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0HE0MF52",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "type": "reaction_added",
+    "user": "U0JULDCGH",
+    "item": {
+      "type": "message",
+      "channel": "C7JCG4FV3",
+      "ts": "1508160764.000265"
+    },
+    "reaction": "horse",
+    "item_user": "U0JULDCGH",
+    "event_ts": "1508161185.000032"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7JQ515M1",
+  "event_time": 1508161185,
+  "authed_users": [
+    "U0JULDCGH"
+  ]
+}

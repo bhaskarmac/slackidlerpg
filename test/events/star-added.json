@@ -1,0 +1,38 @@
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0HE0MF52",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "type": "star_added",
+    "user": "U0JULDCGH",
+    "item": {
+      "type": "message",
+      "channel": "C7JCG4FV3",
+      "message": {
+        "type": "message",
+        "user": "U0JULDCGH",
+        "text": "banana",
+        "ts": "1508160764.000265",
+        "permalink": "https://rnycmeetups.slack.com/archives/C7JCG4FV3/p1508160764000265",
+        "is_starred": true,
+        "reactions": [
+          {
+            "name": "joy",
+            "users": [
+              "U0JULDCGH"
+            ],
+            "count": 1
+          }
+        ]
+      },
+      "date_create": 1508161076
+    },
+    "event_ts": "1508161076.000203"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7K11391B",
+  "event_time": 1508161076,
+  "authed_users": [
+    "U0JULDCGH"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "token": "VERIFICATION_TOKEN",
+  "team_id": "TEAM_ID",
+  "api_app_id": "APP_ID",
+  "event": {
+    "type": "message",
+    "user": "USER_ID",
+    "text": "This is a message in <#CHANNEL_ID|idlerpg>",
+    "ts": "1508160048.000409",
+    "channel": "CHANNEL_ID",
+    "event_ts": "1508160048.000409"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7J6WJXS4",
+  "event_time": 1508160048,
+  "authed_users": [
+    "USER_ID"
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0HE0MF52",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "type": "pin_added",
+    "user": "U0JULDCGH",
+    "channel_id": "C7JCG4FV3",
+    "item": {
+      "type": "message",
+      "channel": "C7JCG4FV3",
+      "message": {
+        "type": "message",
+        "user": "U0JULDCGH",
+        "text": "banana",
+        "ts": "1508160764.000265",
+        "permalink": "https://rnycmeetups.slack.com/archives/C7JCG4FV3/p1508160764000265",
+        "is_starred": true,
+        "pinned_to": [
+          "C7JCG4FV3"
+        ],
+        "reactions": [
+          {
+            "name": "joy",
+            "users": [
+              "U0JULDCGH"
+            ],
+            "count": 1
+          },
+          {
+            "name": "disappointed",
+            "users": [
+              "U0JULDCGH"
+            ],
+            "count": 1
+          }
+        ]
+      },
+      "created": 1508161227,
+      "created_by": "U0JULDCGH"
+    },
+    "item_user": "U0JULDCGH",
+    "pin_count": "1",
+    "event_ts": "1508161227.000348"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7JSD13QS",
+  "event_time": 1508161227,
+  "authed_users": [
+    "U0JULDCGH"
+  ]
+}

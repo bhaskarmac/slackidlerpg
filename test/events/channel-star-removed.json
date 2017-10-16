@@ -1,0 +1,23 @@
+// This ... isn't visible to other users, is it? We don't need to penalize this.
+
+{
+  "token": "qFgF0Vbz7rXipUcimb8OYxoo",
+  "team_id": "T0HE0MF52",
+  "api_app_id": "A7G6TLYR0",
+  "event": {
+    "type": "star_removed",
+    "user": "U0JULDCGH",
+    "item": {
+      "type": "channel",
+      "channel": "C7JCG4FV3",
+      "date_create": "1508161564"
+    },
+    "event_ts": "1508161570.000703"
+  },
+  "type": "event_callback",
+  "event_id": "Ev7KV0BTJB",
+  "event_time": 1508161570,
+  "authed_users": [
+    "U0JULDCGH"
+  ]
+}
