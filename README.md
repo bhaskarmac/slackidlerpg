@@ -19,3 +19,11 @@ Environment variables:
 
 - To add an event, you must also add the appropriate OAuth scope
  - e.g., to listen for stars, you must subscribe to the event AND separately add the stars:read oauth permission
+
+
+
+# Linting your code
+
+To lint your code:
+- You can change the configuration for eslint in `.eslintrc.js`
+- Use `eslint src` (to lint the src directory)
