@@ -103,7 +103,11 @@ Idle.prototype.handleEvent = function handleEvent(event) {
   // TODO - this is basically guaranteed to be buggy, this badly needs tests based on the JSON events.
   const player_id = event.event.hasOwnProperty('user')
     ? event.event.user
-    : event.event.message.user;
+    : event.event.hasOwnProperty('message')
+    ? event.event.message.user // for broadcasting a message from a thread
+    : event.event.hasOwnProperty('previous_message')
+    ? event.event.previous_message.user
+    : undefined; // I don't know, I give up
 
   this.storage.get('teams', `${team_id}:channel_id`, `${team_id}:players`, `${team_id}:${player_id}`)
   .then(([teams, channel_id, players, data]) => {
