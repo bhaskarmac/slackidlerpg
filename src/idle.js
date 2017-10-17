@@ -15,6 +15,11 @@ winston.add(winston.transports.Console, {
   timestamp: false
 });
 
+const MAX_ITEM_SLOTS = 3;
+
+const randomIntegerInclusive = (min, max) => {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 function Idle(timeout_in_seconds) {
   this.clients = new Clients();
@@ -141,26 +146,97 @@ Idle.prototype.handlePlayer = function handlePlayer(ago, team_id, channel_id, pl
     player_data['time_to_level'] = parseInt(player_data['time_to_level']) - ago;
 
     if (player_data['time_to_level'] <= 0) {
-      player_data['level'] = parseInt(player_data['level']) + 1;
-      player_data['time_to_level'] = this.calculateTimeToLevel(parseInt(player_data['level'])+1) + parseInt(player_data['time_to_level']);
-      player_data['events'][Math.floor(new Date().getTime() / 1000)] = `Levelled up to ${player_data['level']}!`;
-
-      this.announceLevel(player_data);
-
-      // trim player_data events
-      const keys = Object.keys(player_data['events']);
-      if (keys.length > 10) {
-        const oldest_key = Math.min(...keys);
-        delete player_data['events'][oldest_key];
-      }
+      this.levelPlayer(player_data);
     }
 
     this.storage.set(`${team_id}:${player_id}`, JSON.stringify(player_data));
   });
 };
 
-Idle.prototype.initPlayer = function initPlayer(team_id, player_id, display_name) {
+Idle.prototype.levelPlayer = function levelPlayer(player_data) {
+  player_data['level'] = parseInt(player_data['level']) + 1;
+  player_data['time_to_level'] = this.calculateTimeToLevel(parseInt(player_data['level'])+1) + parseInt(player_data['time_to_level']);
+  player_data['events'][Math.floor(new Date().getTime() / 1000)] = `Levelled up to ${player_data['level']}!`;
 
+  // Find new item
+  const new_item = this.findItem(1.5 * player_data['level']);
+  let new_item_message = `\nThey find a new *${this.describeItem(new_item)}*`;
+  // Does the user have any empty slots?
+  if (player_data['items'].length < MAX_ITEM_SLOTS) {
+    player_data['items'].push(new_item);
+  } else {
+    // Is this item better than user's current items?
+    player_data['items'].sort((item1, item2) => { return item1.level - item2.level; });
+    if (player_data['items'][0].level < new_item.level) {
+      new_item_message = new_item_message + `, and throw out their old *${this.describeItem(player_data['items'][0])}* to make space for it.`;
+      player_data['items'][0] = new_item;
+    } else {
+      new_item_message = new_item_message + `, but it is no better than their current items.`;
+    }
+  }
+
+  const message = `Player <@${player_data['user_id']}> has levelled up to *level ${player_data['level']}*! *${timeUntilLevelupString(player_data['time_to_level'])}* until the next level.`;
+  this.announce(player_data['team_id'], message + ' ' + new_item_message);
+
+  // trim player_data events
+  const keys = Object.keys(player_data['events']);
+  if (keys.length > 10) {
+    const oldest_key = Math.min(...keys);
+    delete player_data['events'][oldest_key];
+  }
+}
+
+Idle.prototype.findItem = function findItem(max_item_level) {
+  const adjectives = [
+    'Vorpal',
+    'Shiny',
+    'Rusty',
+    'Quiescent',
+    'Bloody',
+    'Lazy',
+    'Illicit',
+    '+1',
+    'Adjacent',
+    'Sterile',
+    'Bespoke',
+    'Greasy',
+    'Erotic',
+    ];
+  const items = [
+    'Sword',
+    'Smartphone',
+    'Spear',
+    'Gun',
+    'Horse',
+    'Bat',
+    'Hammer',
+    'Henchman',
+    'Novel',
+  ];
+  const suffixes = [ // don't forget the leading space.
+    ' of Doom',
+    ' the Destroyer',
+    ', Killer of Henchmen',
+    ' 2.0',
+    'alyzer',
+    ' 2000',
+  ];
+
+  const level = randomIntegerInclusive(1, max_item_level);
+  const adjective = Math.random() > 0.5 ? '' : adjectives[randomIntegerInclusive(0, adjectives.length - 1)];
+  const suffix = Math.random() > 0.2 ? '' : suffixes[randomIntegerInclusive(0, suffixes.length - 1)];
+  const name = items[randomIntegerInclusive(0, items.length - 1)];
+
+  const item = `${adjective} ${name}${suffix}`.replace(/ +/g, ' ').trim();
+
+  return { level, item };
+};
+
+Idle.prototype.describeItem = function describeItem(item) {
+  return `Level ${item.level} ${item.item}`;
+};
+
+Idle.prototype.initPlayer = function initPlayer(team_id, player_id, display_name) {
   const data = {
     "user_id": player_id,
     "display_name": display_name === undefined ? this.getDisplayName(team_id, player_id) : display_name,
@@ -168,6 +244,7 @@ Idle.prototype.initPlayer = function initPlayer(team_id, player_id, display_name
     "level": 1,
     "time_to_level": this.calculateTimeToLevel(2),
     "events": {},
+    "items": [],
     "away": false,
   };
 
@@ -181,12 +258,6 @@ Idle.prototype.calculateTimeToLevel = function calculateTimeToLevel(level) {
   // #idlerpg
   return Math.floor(600 * Math.pow(1.16, level-1));
 };
-
-Idle.prototype.announceLevel = function announceLevel(player_data) {
-  // announce the level up event in Slack
-  const message = `Player <@${player_data['user_id']}> has levelled up to *level ${player_data['level']}*! ${timeUntilLevelupString(player_data['time_to_level'])} until the next level.`;
-  this.announce(player_data['team_id'], message);
-}
 
 Idle.prototype.announceRegistration = function announceRegistration(player_data) {
   // announce the level up event in Slack
