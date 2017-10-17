@@ -21,10 +21,57 @@ const randomIntegerInclusive = (min, max) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+const local_event_types = [
+  'message',
+  'star_added',
+  'star_removed',
+  'pin_added',
+  'pin_removed',
+  'reaction_added',
+  'reaction_removed',
+];
+
+const local_message_event_subtypes = [
+  'file_share',
+  'message_deleted',
+  'message_changed',
+  'channel_purpose',
+  'channel_topic',
+];
+
+const penalty_modifiers = {
+  // Talking in channel is the length of the message
+  'message': (event) => { return event.event.text.length; },
+  // Talking in a thread is half the penalty of a message
+  '_thread': (event) => { return Math.ceil(0.5 * event.event.text.length); },
+  // Checking the box to broadcast a thread reply to a channel... needs custom stuff. Bleh.
+  '_message_from_thread': (event) => { return event.event.message.text.length; },
+
+  // Penalty is the size of the file in megabytes.
+  'file_share': (event) => { return Math.ceil(event.event.file.size / (1024 * 1024)); },
+
+  // These are sort of channel-wide events
+  'pin_added': (event) => { return 5; },
+  'pin_removed': (event) => { return 5; },
+  'channel_purpose': (event) => { return 5; },
+  'channel_topic': (event) => { return 5; },
+
+  // These are moderately quiet events
+  'star_added': (event) => { return 1; },
+  'star_removed': (event) => { return 1; },
+  'reaction_added': (event) => { return 2; },
+  'reaction_removed': (event) => { return 2; },
+
+  // Oh no you don't, you sneaky little jerk.
+  'message_deleted': (event) => { return 15; },
+  'message_changed': (event) => { return 15; },
+};
+
+
 function Idle(timeout_in_seconds) {
   this.clients = new Clients();
   this.storage = new Storage();
-  this.timeout_in_seconds = timeout_in_seconds || 10;
+  this.timeout_in_seconds = timeout_in_seconds || 30;
 
   // crap self if these aren't set, since they're required
   this.client_id = process.env.CLIENT_ID;
@@ -33,9 +80,134 @@ function Idle(timeout_in_seconds) {
 }
 
 Idle.prototype.handleEvent = function handleEvent(event) {
-  if (event.event.type === 'message') {
-    this.handleMessageEvent(event);
+  if (!event || !event.hasOwnProperty('event') || !event.event.hasOwnProperty('type')) {
+    // Some sort of broken event.
+    winston.error(`Weird event: ${JSON.stringify(event)}`);
+    return;
   }
+
+  if (!event.event.hasOwnProperty('user') && event.event.hasOwnProperty('subtype') && event.event.subtype === 'bot_message') {
+    // A bot is never a user.
+    return;
+  }
+
+  const team_id = event.team_id;
+
+  // Things like message changes and thread responses that get broadcast to channel
+  // don't belong to a channel, per se, they belong to some item that belongs to a channel
+  const event_channel_id = event.event.hasOwnProperty('item')
+    ? event.event.item.channel
+    : event.event.channel;
+
+  // Ditto for users
+  // TODO - this is basically guaranteed to be buggy, this badly needs tests based on the JSON events.
+  const player_id = event.event.hasOwnProperty('user')
+    ? event.event.user
+    : event.event.hasOwnProperty('message')
+    ? event.event.message.user // for broadcasting a message from a thread
+    : event.event.hasOwnProperty('previous_message')
+    ? event.event.previous_message.user
+    : undefined; // I don't know, I give up
+
+  this.storage.get('teams', `${team_id}:channel_id`, `${team_id}:players`, `${team_id}:${player_id}`)
+  .then(([teams, channel_id, players, data]) => {
+    const player_data = JSON.parse(data);
+
+    if (!teams.includes(team_id)) {
+      // Did this team install idlerpg?
+      return;
+    }
+    if (players === null || !players.includes(player_id)) {
+      // Is this a registered player?
+      return;
+    }
+
+    if (event_channel_id === channel_id) {
+      this.handleLocalEvent(event, channel_id, player_data);
+    } else {
+      this.handleGlobalEvent(event, player_data);
+    }
+  });
+};
+
+Idle.prototype.handleLocalEvent = function handleLocalEvent(event, channel_id, player_data) {
+  winston.debug(`Handling local event: ${JSON.stringify(event)}`);
+
+  // Figure out penalty type
+  const penalty_type = this.getPenaltyType(event);
+
+  winston.debug(`Penalty type is ${penalty_type} for ${JSON.stringify(event)}`);
+
+  if (!penalty_modifiers.hasOwnProperty(penalty_type)) {
+    // Not a penalizable event
+    return;
+  }
+
+  const penalty_modifier = penalty_modifiers[penalty_type](event);
+  const penalty = Math.floor(penalty_modifier * Math.pow(1.14, player_data.level));
+
+  player_data['time_to_level'] = parseInt(player_data['time_to_level']) + penalty;
+  player_data['events'][Math.floor(new Date().getTime() / 1000)] = `Penalized by ${penalty} seconds for ${penalty_type}`;
+
+  const message = `User <@${player_data['user_id']}> penalized *${timeUntilLevelupString(penalty)}* for ${penalty_type}. New time to level ${player_data['level']+1}: *${timeUntilLevelupString(player_data['time_to_level'])}*.`;
+
+  this.announce(player_data['team_id'], message);
+
+  // trim player_data events
+  const keys = Object.keys(player_data['events']);
+  if (keys.length > 10) {
+    const oldest_key = Math.min(...keys);
+    delete player_data['events'][oldest_key];
+  }
+
+  this.storage.set(`${team_id}:${player_id}`, JSON.stringify(player_data));
+};
+
+Idle.prototype.handleGlobalEvent = function handleGlobalEvent(event, player_data) {
+  // Ignoring global events for now
+};
+
+Idle.prototype.getPenaltyType = function getPenaltyType(event) {
+  if (event.event.type === 'message'
+    && event.event.subtype === 'pin_added') {
+    // Special case: Slack sends a message event when a pin is added,
+    // in addition to the pin_added event. The user should not be penalized twice.
+    return undefined;
+  }
+
+  if (event.event.type === 'message'
+    && event.event.hasOwnProperty('thread_ts')) {
+    // A message in a thread
+    return '_thread';
+  }
+
+  if (event.event.type === 'message'
+    && event.event.hasOwnProperty('message')
+    && event.event.message.hasOwnProperty('thread_ts')) {
+    // I _think_ this is what Slack does when you reply to a thread,
+    // and check the box to post it in the original channel.
+    // See thread-participating-and-sending-to-channel-2.json
+
+    // The thread reply itself looks like thread-participating-and-sending-to-channel-1.json,
+    // and is handled above.
+
+    // I cannot find anywhere that this is documented.
+    // Why don't I see https://api.slack.com/events/message/message_replied anywhere
+    // in the responses I'm generating while testing this by hand?
+    return '_message_from_thread';
+  }
+
+  if (event.event.type === 'message'
+    && event.event.hasOwnProperty('subtype')
+    && local_message_event_subtypes.includes(event.event.subtype)) {
+    return event.event.subtype;
+  }
+
+  if (local_event_types.includes(event.event.type)) {
+    return event.event.type;
+  }
+
+  return undefined;
 };
 
 Idle.prototype.handleCommand = function handleCommand(command) {
@@ -385,52 +557,7 @@ Idle.prototype.resetGame = function resetGame(team_id) {
   });
 };
 
-Idle.prototype.handleMessageEvent = function handleMessageEvent(event) {
-  const player_id = event.event.user;
-  const team_id = event.team_id;
-  const event_channel_id = event.event.channel;
-
-  this.storage.get('teams', `${team_id}:channel_id`, `${team_id}:players`, `${team_id}:${player_id}`)
-  .then(([teams, channel_id, players, data]) => {
-    if (!teams.includes(team_id)) {
-      // Did this team install idlerpg?
-      return;
-    }
-    if (event_channel_id !== channel_id) {
-      // Did this take place in #idlerpg?
-      return;
-    }
-    if (players === null || !players.includes(player_id)) {
-      // Is this a registered player?
-      return;
-    }
-
-    winston.debug(`Handling message event: ${JSON.stringify(event)}`);
-
-    // Apply penalty.
-    const player_data = (data === null)
-      ? this.initPlayer(team_id, player_id)
-      : JSON.parse(data);
-
-    const penalty = Math.floor(event.event.text.length * Math.pow(1.14, player_data.level));
-
-    player_data['time_to_level'] = parseInt(player_data['time_to_level']) + penalty;
-    player_data['events'][Math.floor(new Date().getTime() / 1000)] = `Penalized by ${penalty} seconds for ${event.event.type}`;
-
-    const message = `User <@${player_data['user_id']}> penalized *${timeUntilLevelupString(penalty)}* for a message of length ${event.event.text.length}. New time to level ${player_data['level']+1}: *${timeUntilLevelupString(player_data['time_to_level'])}*.`;
-
-    this.announce(player_data['team_id'], message);
-
-    // trim player_data events
-    const keys = Object.keys(player_data['events']);
-    if (keys.length > 10) {
-      const oldest_key = Math.min(...keys);
-      delete player_data['events'][oldest_key];
-    }
-
-    this.storage.set(`${team_id}:${player_id}`, JSON.stringify(player_data));
-
-  });
+Idle.prototype.handlePenalty = function handlePenalty(event) {
 };
 
 Idle.prototype.getDisplayName = function getDisplayName(team_id, user_id) {
