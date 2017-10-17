@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser')
 
 const Idle = require('./idle');
+const logger = require('./logger');
 
 const API_PORT = process.env.API_PORT || 8010;
 const idle = new Idle();
@@ -14,7 +15,6 @@ app.use(bodyParser.json())
 
 // Listen for events from Slack
 app.post('/action', (req, res) => {
-  // console.log(`/action body: ${JSON.stringify(req.body)}`);
 
   if (req.body && req.body.challenge) {
     res.json({"challenge":req.body.challenge});
@@ -28,7 +28,7 @@ app.post('/action', (req, res) => {
 
 // Listens for the /idle command
 app.post('/idle', (req, res) => {
-  console.log(`/idle body: ${JSON.stringify(req.body)}`);
+  logger.info(`/idle body: ${JSON.stringify(req.body)}`);
 
   idle.handleCommand(req.body)
   .then(result => {
@@ -38,7 +38,7 @@ app.post('/idle', (req, res) => {
 
 // Listens for the /idlereset command
 app.post('/reset', (req, res) => {
-  console.log(`/reset body: ${JSON.stringify(req.body)}`);
+  logger.info(`/reset body: ${JSON.stringify(req.body)}`);
 
   idle.handleCommand(req.body)
   .then(result => {
@@ -48,7 +48,7 @@ app.post('/reset', (req, res) => {
 
 // OAuth for distribution
 app.get('/authorize', (req, res) => {
-  console.log(`Request query: ${JSON.stringify(req.query)}`);
+  logger.info(`Request query: ${JSON.stringify(req.query)}`);
 
   if (!req.query) {
     res.send('Query missing.');
@@ -67,7 +67,7 @@ app.get('/authorize', (req, res) => {
 
 // start server
 app.listen(API_PORT, function () {
-  console.log(`Listening on ${API_PORT}`);
+  logger.info(`Listening on ${API_PORT}`);
 })
 
 // start loop

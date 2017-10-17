@@ -1,19 +1,9 @@
-const winston = require('winston');
 const SlackWebClient = require('@slack/client').WebClient;
 
+const logger = require('./logger');
 const Clients = require('./clients');
 const Storage = require('./storage-redis');
 const timeUntilLevelupString = require('./TimeUtil');
-
-winston.level = 'debug';
-winston.remove(winston.transports.Console);
-winston.add(winston.transports.Console, {
-  level: process.env.LOG_LEVEL,
-  prettyPrint: true,
-  colorize: true,
-  silent: false,
-  timestamp: false
-});
 
 const MAX_ITEM_SLOTS = 3;
 
@@ -82,7 +72,7 @@ function Idle(timeout_in_seconds) {
 Idle.prototype.handleEvent = function handleEvent(event) {
   if (!event || !event.hasOwnProperty('event') || !event.event.hasOwnProperty('type')) {
     // Some sort of broken event.
-    winston.error(`Weird event: ${JSON.stringify(event)}`);
+    logger.error(`Weird event: ${JSON.stringify(event)}`);
     return;
   }
 
@@ -131,12 +121,12 @@ Idle.prototype.handleEvent = function handleEvent(event) {
 };
 
 Idle.prototype.handleLocalEvent = function handleLocalEvent(event, channel_id, player_data) {
-  winston.debug(`Handling local event: ${JSON.stringify(event)}`);
+  logger.debug(`Handling local event: ${JSON.stringify(event)}`);
 
   // Figure out penalty type
   const penalty_type = this.getPenaltyType(event);
 
-  winston.debug(`Penalty type is ${penalty_type} for ${JSON.stringify(event)}`);
+  logger.debug(`Penalty type is ${penalty_type} for ${JSON.stringify(event)}`);
 
   if (!penalty_modifiers.hasOwnProperty(penalty_type)) {
     // Not a penalizable event
@@ -211,7 +201,7 @@ Idle.prototype.getPenaltyType = function getPenaltyType(event) {
 };
 
 Idle.prototype.handleCommand = function handleCommand(command) {
-  winston.debug(`Received command: ${JSON.stringify(command)}`);
+  logger.debug(`Received command: ${JSON.stringify(command)}`);
 
   if (command.command === '/idle') {
     return this.handleUserRegistration(command);
@@ -224,11 +214,11 @@ Idle.prototype.handleCommand = function handleCommand(command) {
 };
 
 Idle.prototype.start = function start() {
-  winston.info("Starting idle loop");
+  logger.info("Starting idle loop");
 
   this.findChannels()
   .then(() => {
-    winston.info(`Updated channels, starting main idle loop`);
+    logger.info(`Updated channels, starting main idle loop`);
     this.doLoop();
   });
 };
@@ -254,15 +244,15 @@ Idle.prototype.findChannelForTeam = function findChannelForTeam(team_id) {
       };
       this.clients.client(token).channels.list(opts, (err, res) => {
         if (err) {
-          winston.error(`Error getting channels for team ${team_id}: ${JSON.stringify(err)}`);
+          logger.error(`Error getting channels for team ${team_id}: ${JSON.stringify(err)}`);
         } else if (res.ok === false) {
-          winston.error(`Unhappy response getting channels for team ${team_id}: ${JSON.stringify(res)}`);
+          logger.error(`Unhappy response getting channels for team ${team_id}: ${JSON.stringify(res)}`);
         } else {
           const channel = res.channels.find((channel) => { return channel.name === "idlerpg"; });
           if (channel === undefined) {
-            winston.error(`#idlerpg not found for team ${team_id}`);
+            logger.error(`#idlerpg not found for team ${team_id}`);
           } else {
-            winston.info(`Updating #idlerpg channel for ${team_id} to ${channel.id}`);
+            logger.info(`Updating #idlerpg channel for ${team_id} to ${channel.id}`);
             this.storage.set(`${team_id}:channel_id`, channel.id);
           }
         }
@@ -280,7 +270,7 @@ Idle.prototype.doLoop = function doLoop() {
       const ago = (last_timestamp === null) ? 0 : (now - parseInt(last_timestamp));
       this.storage.set('last_timestamp', now);
 
-      winston.info(`Running loop at ${now}; last ran ${ago} seconds ago`);
+      logger.info(`Running loop at ${now}; last ran ${ago} seconds ago`);
 
       for(team_id of teams) {
         this.handleTeam(ago, team_id);
@@ -296,7 +286,7 @@ Idle.prototype.handleTeam = function handleTeam(ago, team_id) {
   this.storage.get(`${team_id}:token`, `${team_id}:channel_id`, `${team_id}:players`)
   .then(([token, channel_id, players]) => {
     if (channel_id === null) {
-      winston.error(`No channel ID was found for ${team_id}; skipping.`);
+      logger.error(`No channel ID was found for ${team_id}; skipping.`);
       return;
     }
     for (player_id of players) {
@@ -313,7 +303,7 @@ Idle.prototype.handlePlayer = function handlePlayer(ago, team_id, channel_id, pl
       : JSON.parse(data);
 
     const { events, ...debug_data } = player_data;
-    winston.debug(`Processing player ${player_id} on team ${team_id}: ${JSON.stringify(debug_data)}`);
+    logger.debug(`Processing player ${player_id} on team ${team_id}: ${JSON.stringify(debug_data)}`);
 
     player_data['time_to_level'] = parseInt(player_data['time_to_level']) - ago;
 
@@ -448,9 +438,9 @@ Idle.prototype.announce = function announce(team_id, message) {
     const slack_client = this.clients.client(token);
     slack_client.chat.postMessage(channel_id, message, (err, res) => {
       if (err) {
-        winston.error(`Error sending message to ${team_id}:${channel_id}: ${err}`);
+        logger.error(`Error sending message to ${team_id}:${channel_id}: ${err}`);
       } else {
-        winston.info(`Sent message to ${team_id}:${channel_id}: ${message}`);
+        logger.info(`Sent message to ${team_id}:${channel_id}: ${message}`);
       }
     });
   });
@@ -463,30 +453,30 @@ Idle.prototype.handleUserRegistration = function handleUserRegistration(command)
       if (!teams.includes(command.team_id)) {
         // Did this team install idlerpg?
         const message = `Team ${command.team_id} (${command.team_domain}) has not installed IdleRPG - cannot register user ${command.user_id} (${command.user_name})`;
-        winston.error(message);
+        logger.error(message);
         return resolve(message);
       } else if (command.channel_id !== channel) {
         // Is this command being called from within #idlerpg?
         const message = `You must issue the /idle command from the ${channel} channel`; // TODO stupid, they need to know the name. All the more reason to hardcode #idlerpg
-        winston.error(message);
+        logger.error(message);
         return resolve(message);
       } else if (players !== null && players.includes(command.user_id) && data !== null) {
         // Is this player already registered?
         const player_data = JSON.parse(data);
         const message = `You are currently level ${player_data['level']} and have ${timeUntilLevelupString(player_data['time_to_level'])} left until you level up.`;
-        winston.info(message);
+        logger.info(message);
         return resolve(message);
       } else if (players === null || !players.includes(command.user_id)) {
         // Register this player!
         player_data = this.initPlayer(command.team_id, command.user_id, command.user_name);
         const message = `Welcome to IdleRPG! You are now level ${player_data['level']}, and have ${timeUntilLevelupString(player_data['time_to_level'])} until you level up.`;
-        winston.info(message);
+        logger.info(message);
         this.announceRegistration(player_data);
         return resolve(message);
       } else {
         // Uh-poh.
         const message = `Something went wrong during your registration.`;
-        winston.error(message);
+        logger.error(message);
         return resolve(message);
       }
     });
@@ -503,7 +493,7 @@ Idle.prototype.handleGameReset = function handleGameReset(command) {
       // Did this team install idlerpg?
       if (!teams.includes(team_id)) {
         const message = `Team ${team_id} (${team_domain}) has not installed IdleRPG.`;
-        winston.error(message);
+        logger.error(message);
         return resolve(message);
       }
 
@@ -512,20 +502,20 @@ Idle.prototype.handleGameReset = function handleGameReset(command) {
       slack_client.users.info(user_id, (err, res) => {
         if (err) {
           const message = `Error fetching info for user ${user_id}: ${JSON.stringify(err)}`;
-          winston.error(message);
+          logger.error(message);
           resolve(message);
         } else if (!res.ok) {
           const message = `Bad response fetching info for user ${user_id}: ${JSON.stringify(res)}`;
-          winston.error(message);
+          logger.error(message);
           resolve(message);
         } else if (res.user.is_admin === false) {
           // maybe comment in the channel and tell everyone to boo this man
           const message = `Only admins are allowed to reset IdleRPG for team ${team_id}.`;
-          winston.error(message);
+          logger.error(message);
           resolve(message);
         } else {
           const message = `Resetting game for team ${team_id}`;
-          winston.debug(message);
+          logger.debug(message);
           resolve(message);
           this.resetGame(team_id);
         }
@@ -539,17 +529,17 @@ Idle.prototype.resetGame = function resetGame(team_id) {
     .then(([teams, token, players]) => {
       // Did this team install idlerpg?
       if (!teams.includes(team_id)) {
-        winston.error(`Attempted to reset idleRPG for ${team_id}, which is not registered.`);
+        logger.error(`Attempted to reset idleRPG for ${team_id}, which is not registered.`);
         return;
       }
 
       for (player_id of players) {
-        winston.debug(`Deleting data for ${team_id}:${player_id}`);
+        logger.debug(`Deleting data for ${team_id}:${player_id}`);
         this.storage.remove(`${team_id}:${player_id}`);
         // Message player directly?
       }
 
-      winston.debug(`Clearing player data for ${team_id}`);
+      logger.debug(`Clearing player data for ${team_id}`);
       this.storage.remove(`${team_id}:players`);
 
       // Announce highest level achieved, total time spent idling, highest penalty? Something fancy.
@@ -561,7 +551,7 @@ Idle.prototype.handlePenalty = function handlePenalty(event) {
 };
 
 Idle.prototype.getDisplayName = function getDisplayName(team_id, user_id) {
-  winston.warn("getDisplayName is unimplemented"); // TODO implement
+  logger.warn("getDisplayName is unimplemented"); // TODO implement
   return "Unknown Username";
 }
 
@@ -573,14 +563,14 @@ Idle.prototype.authorize = function authorize(code) {
     client.oauth.access(this.client_id, this.client_secret, code, this.redirect_uri, (err, res) => {
       if (err) {
         const message = `OAuth error: ${JSON.stringify(err)}`;
-        winston.error(message);
+        logger.error(message);
         resolve(message);
       } else if (!res.ok) {
         const message = `Bad OAuth response: ${JSON.stringify(res)}`;
-        winston.error(message);
+        logger.error(message);
         resolve(message);
       } else {
-        winston.debug(`OAuth response: ${JSON.stringify(res)}`);
+        logger.debug(`OAuth response: ${JSON.stringify(res)}`);
         this.storage.set(`${res.team_id}:token`, res.access_token);
         this.storage.add('teams', res.team_id);
         resolve('You must create a channel named #idlerpg in order for this app to work.');
