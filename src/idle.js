@@ -160,7 +160,7 @@ Idle.prototype.levelPlayer = function levelPlayer(player_data) {
 
   // Find new item
   const new_item = this.findItem(1.5 * player_data['level']);
-  let new_item_message = `They find a new *${this.describeItem(new_item)}*`;
+  let new_item_message = `\nThey find a new *${this.describeItem(new_item)}*`;
   // Does the user have any empty slots?
   if (player_data['items'].length < MAX_ITEM_SLOTS) {
     player_data['items'].push(new_item);
@@ -195,6 +195,12 @@ Idle.prototype.findItem = function findItem(max_item_level) {
     'Bloody',
     'Lazy',
     'Illicit',
+    '+1',
+    'Adjacent',
+    'Sterile',
+    'Bespoke',
+    'Greasy',
+    'Erotic',
     ];
   const items = [
     'Sword',
@@ -204,16 +210,30 @@ Idle.prototype.findItem = function findItem(max_item_level) {
     'Horse',
     'Bat',
     'Hammer',
+    'Henchman',
+    'Novel',
   ];
-  return {
-    level: randomIntegerInclusive(1, max_item_level),
-    adjective: adjectives[randomIntegerInclusive(0, adjectives.length - 1)],
-    name: items[randomIntegerInclusive(0, items.length - 1)],
-  };
+  const suffixes = [ // don't forget the leading space.
+    ' of Doom',
+    ' the Destroyer',
+    ', Killer of Henchmen',
+    ' 2.0',
+    'alyzer',
+    ' 2000',
+  ];
+
+  const level = randomIntegerInclusive(1, max_item_level);
+  const adjective = Math.random() > 0.5 ? '' : adjectives[randomIntegerInclusive(0, adjectives.length - 1)];
+  const suffix = Math.random() > 0.2 ? '' : suffixes[randomIntegerInclusive(0, suffixes.length - 1)];
+  const name = items[randomIntegerInclusive(0, items.length - 1)];
+
+  const item = `${adjective} ${name}${suffix}`.replace(/ +/g, ' ').trim();
+
+  return { level, item };
 };
 
 Idle.prototype.describeItem = function describeItem(item) {
-  return `Level ${item.level} ${item.adjective} ${item.name}`;
+  return `Level ${item.level} ${item.item}`;
 };
 
 Idle.prototype.initPlayer = function initPlayer(team_id, player_id, display_name) {
